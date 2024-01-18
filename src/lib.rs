@@ -30,7 +30,7 @@ extern crate thiserror;
 #[cfg(target_os = "windows")]
 extern crate widestring;
 #[cfg(target_os = "windows")]
-extern crate winapi;
+extern crate windows_sys;
 
 pub use self::inner::*;
 
@@ -39,11 +39,16 @@ mod inner {
     use error::{Result, SingleInstanceError};
     use std::ptr;
     use widestring::WideCString;
-    use winapi::shared::winerror::{ERROR_ALREADY_EXISTS, ERROR_INVALID_HANDLE};
-    use winapi::um::errhandlingapi::GetLastError;
-    use winapi::um::handleapi::CloseHandle;
-    use winapi::um::synchapi::CreateMutexW;
-    use winapi::um::winnt::HANDLE;
+    //use winapi::shared::winerror::{ERROR_ALREADY_EXISTS, ERROR_INVALID_HANDLE};
+    use windows_sys::Win32::Foundation::{ERROR_ALREADY_EXISTS, ERROR_INVALID_HANDLE};
+    use windows_sys::Win32::Foundation::GetLastError;
+    //use winapi::um::errhandlingapi::GetLastError;
+    use windows_sys::Win32::Foundation::CloseHandle;
+    //use winapi::um::handleapi::CloseHandle;
+    //use winapi::um::synchapi::CreateMutexW;
+    use windows_sys::Win32::System::Threading::CreateMutexW;
+    //use winapi::um::winnt::HANDLE;
+    use windows_sys::Win32::Foundation::HANDLE;
 
     /// A struct representing one running instance.
     pub struct SingleInstance {
@@ -62,7 +67,7 @@ mod inner {
                 let last_error = GetLastError();
 
                 // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-createmutexexw
-                if handle.is_null() || handle == ERROR_INVALID_HANDLE as _ {
+                if handle == 0 || handle == ERROR_INVALID_HANDLE as _ {
                     Err(SingleInstanceError::MutexError(last_error))
                 } else if last_error == ERROR_ALREADY_EXISTS {
                     CloseHandle(handle);
