@@ -111,7 +111,9 @@ mod inner {
             let sock = socket::socket(
                 socket::AddressFamily::Unix,
                 socket::SockType::Stream,
-                socket::SockFlag::empty(),
+                // If we fork and exec, then make sure the child process doesn't
+                // hang on to this file descriptor.
+                socket::SockFlag::SOCK_CLOEXEC,
                 None,
             )?;
 
@@ -180,14 +182,19 @@ mod inner {
     }
 }
 
-#[test]
-fn test_single_instance() {
-    {
-        let instance_a = SingleInstance::new("aa2d0258-ffe9-11e7-ba89-0ed5f89f718b").unwrap();
-        assert!(instance_a.is_single());
-        let instance_b = SingleInstance::new("aa2d0258-ffe9-11e7-ba89-0ed5f89f718b").unwrap();
-        assert!(!instance_b.is_single());
+#[cfg(test)]
+mod tests {
+    use super::*;
+    static UNIQ_ID : &'static str   = "aa2d0258-ffe9-11e7-ba89-0ed5f89f718b";
+    #[test]
+    fn test_single_instance() {
+        {
+            let instance_a = SingleInstance::new(UNIQ_ID).unwrap();
+            assert!(instance_a.is_single());
+            let instance_b = SingleInstance::new(UNIQ_ID).unwrap();
+            assert!(!instance_b.is_single());
+        }
+        let instance_c = SingleInstance::new(UNIQ_ID).unwrap();
+        assert!(instance_c.is_single());
     }
-    let instance_c = SingleInstance::new("aa2d0258-ffe9-11e7-ba89-0ed5f89f718b").unwrap();
-    assert!(instance_c.is_single());
 }
